@@ -19,8 +19,9 @@ import com.vaadin.flow.component.upload.receivers.FileData;
  * created using {@link java.io.File#createTempFile(String, String)} with a null
  * suffix.
  * <p>
- * For a custom file the constructor {@link UHAbstractFileBuffer(UHFileFactory)}
- * should be used.
+ * For a custom file the constructor
+ * {@link UHAbstractFileBuffer#UHAbstractFileBuffer(UHFileFactory)} should be
+ * used.
  */
 public class UHFileBuffer extends UHAbstractFileBuffer implements UHReceiver {
 

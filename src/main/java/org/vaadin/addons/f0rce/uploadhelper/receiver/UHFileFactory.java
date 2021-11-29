@@ -9,11 +9,12 @@ import java.io.Serializable;
  */
 public interface UHFileFactory extends Serializable {
 
-    /**
-     * Create a new file for given file name.
-     *
-     * @param fileName file name to create file for
-     * @return {@link File} that should be used
-     */
-    File createFile(String fileName) throws IOException;
+	/**
+	 * Creates a new file for given file name.
+	 * 
+	 * @param fileName file name to create file for
+	 * @return {@link File}
+	 * @throws IOException
+	 */
+	File createFile(String fileName) throws IOException;
 }

@@ -7,10 +7,6 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
-import de.f0rce.ace.AceEditor;
-import de.f0rce.ace.enums.AceMode;
-import de.f0rce.ace.enums.AceTheme;
-
 @Route("")
 public class View extends Div {
 
@@ -26,12 +22,6 @@ public class View extends Div {
 			}
 
 		}
-
-		AceEditor ace = new AceEditor();
-		ace.setHeight("500px");
-		ace.setWidth("1200px");
-		ace.setTheme(AceTheme.gruvbox);
-		ace.setMode(AceMode.java);
 
 		TextField tf = new TextField("TestValue");
 		tf.setWidth("300px");

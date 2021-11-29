@@ -1,30 +1,17 @@
-# Paper Slider
+# Upload-Helper for Vaadin 14
 
-Vaadin 14 Java integration of @polymer/paper-slider
+Accept single file uploads using drag & drop on <strong>every</strong> Vaadin component.
 
-## Development instructions
+## Install
 
-JavaScript modules can either be published as an NPM package or be kept as local 
-files in your project. The local JavaScript modules should be put in 
-`src/main/resources/META-INF/frontend` so that they are automatically found and 
-used in the using application.
-
-If the modules are published then the package should be noted in the component 
-using the `@NpmPackage` annotation in addition to using `@JsModule` annotation.
+Install the component using [Vaadin Directory](https://vaadin.com/directory/component/upload-helper)
 
 
-Starting the test/demo server:
-1. Run `mvn jetty:run`.
-2. Open http://localhost:8080 in the browser.
+## Documentation
 
-## Publishing to Vaadin Directory
+[docs.f0rce.de/upload-helper](https://docs.f0rce.de/upload-helper)
 
-You can create the zip package needed for [Vaadin Directory](https://vaadin.com/directory/) using
-```
-mvn versions:set -DnewVersion=1.0.0 # You cannot publish snapshot versions 
-mvn install -Pdirectory
-```
 
-The package is created as `target/paper-slider-1.0.0.zip`
+## License
 
-For more information or to upload the package, visit https://vaadin.com/directory/my-components?uploadNewComponent
+[MIT License](https://github.com/F0rce/upload-helper/blob/master/LICENSE)
