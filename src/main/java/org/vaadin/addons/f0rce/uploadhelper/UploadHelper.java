@@ -40,487 +40,509 @@ import elemental.json.JsonObject;
 @CssImport("./@f0rce/uploadhelper/styles.css")
 public class UploadHelper extends Component implements HasSize {
 
-	private StreamVariable streamVariable;
-	private boolean interrupted = false;
-
-	private int activeUploads = 0;
-	private boolean uploading;
-
-	private UHReceiver receiver;
-
-	private int maxFileSize = Integer.MAX_VALUE;
-
-	private UploadHelper() {
-		addUploadErrorListener(event -> {
-		});
-
-		addUploadSuccessListener(event -> {
-		});
-
-		addFileRejectListener(event -> fireEvent(new UHFileRejectedEvent(this, event.getDetailError())));
-
-		getElement().setAttribute("target",
-				new StreamReceiver(getElement().getNode(), "upload-helper", getStreamVariable()));
-
-		final String elementFiles = "element.files";
-		DomEventListener allFinishedListener = e -> {
-			JsonArray files = e.getEventData().getArray(elementFiles);
-
-			boolean isUploading = IntStream.range(0, files.length()).anyMatch(index -> {
-				final String KEY = "uploading";
-				JsonObject object = files.getObject(index);
-				return object.hasKey(KEY) && object.getBoolean(KEY);
-			});
-
-			if (this.uploading && !isUploading) {
-				this.fireAllFinish();
-			}
-			this.uploading = isUploading;
-		};
-
-		addUploadStartListener(e -> this.uploading = true);
-
-		getElement().addEventListener("uh-upload-success", allFinishedListener).addEventData(elementFiles);
-		getElement().addEventListener("uh-upload-error", allFinishedListener).addEventData(elementFiles);
-	}
-
-	public UploadHelper(Component dropZone) {
-		this();
-		String uuid = UUID.randomUUID().toString();
-		dropZone.setId(uuid);
-		getElement().setProperty("dropZone", uuid);
-	}
-
-	public UploadHelper(Component dropZone, UHReceiver receiver) {
-		this();
-		String uuid = UUID.randomUUID().toString();
-		dropZone.setId(uuid);
-		getElement().setProperty("dropZone", uuid);
-		setReceiver(receiver);
-	}
-
-	public UploadHelper(Component dropZone, String shadowDomDropZone, UHReceiver receiver) {
-		this();
-		String uuid = UUID.randomUUID().toString();
-		dropZone.setId(uuid);
-		getElement().setProperty("dropZone", uuid + "|" + shadowDomDropZone);
-		setReceiver(receiver);
-	}
-
-	public UploadHelper(String dropZone) {
-		this();
-		getElement().setProperty("dropZone", dropZone);
-	}
-
-	public UploadHelper(String dropZone, UHReceiver receiver) {
-		this();
-		getElement().setProperty("dropZone", dropZone);
-		setReceiver(receiver);
-	}
-
-	/**
-	 * Sets a receiver.
-	 * 
-	 * @param receiver {@link UHReceiver}
-	 */
-	public void setReceiver(UHReceiver receiver) {
-		this.receiver = receiver;
-	}
-
-	/**
-	 * Return the current receiver.
-	 *
-	 * @return the StreamVariable.
-	 */
-	public UHReceiver getReceiver() {
-		return receiver;
-	}
-
-	/**
-	 * Specify the maximum file size in bytes allowed to upload. Notice that it is a
-	 * client-side constraint, which will be checked before sending the request.
-	 *
-	 * @param maxFileSize the maximum file size in bytes
-	 */
-	public void setMaxFileSize(int maxFileSize) {
-		getElement().setProperty("maxFileSize", maxFileSize);
-		this.maxFileSize = maxFileSize;
-	}
-
-	/**
-	 * Get the maximum allowed file size in the client-side, in bytes.
-	 *
-	 * @return the maximum file size in bytes
-	 */
-	public int getMaxFileSize() {
-		return this.maxFileSize;
-	}
-
-	/**
-	 * Add listener that is informed on the finished upload.
-	 *
-	 * @param listener all finished listener to add
-	 * @return a {@link Registration} for removing the event listener
-	 */
-	public Registration addAllFinishedListener(ComponentEventListener<UHAllFinishedEvent> listener) {
-		return addListener(UHAllFinishedEvent.class, listener);
-	}
-
-	/**
-	 * Add a progress listener that is informed on upload progress.
-	 *
-	 * @param listener progress listener to add
-	 * @return registration for removal of listener
-	 */
-	public Registration addProgressListener(ComponentEventListener<UHProgressUpdateEvent> listener) {
-		return addListener(UHProgressUpdateEvent.class, listener);
-	}
-
-	/**
-	 * Add a succeeded listener that is informed on upload failure.
-	 *
-	 * @param listener failed listener to add
-	 * @return registration for removal of listener
-	 */
-	public Registration addFailedListener(ComponentEventListener<UHFailedEvent> listener) {
-		return addListener(UHFailedEvent.class, listener);
-	}
-
-	/**
-	 * Add a succeeded listener that is informed on upload finished.
-	 *
-	 * @param listener finished listener to add
-	 * @return registration for removal of listener
-	 */
-	public Registration addFinishedListener(ComponentEventListener<UHFinishedEvent> listener) {
-		return addListener(UHFinishedEvent.class, listener);
-	}
-
-	/**
-	 * Add a succeeded listener that is informed on upload start.
-	 *
-	 * @param listener start listener to add
-	 * @return registration for removal of listener
-	 */
-	public Registration addStartedListener(ComponentEventListener<UHStartedEvent> listener) {
-		return addListener(UHStartedEvent.class, listener);
-	}
-
-	/**
-	 * Add a succeeded listener that is informed on upload succeeded.
-	 *
-	 * @param listener succeeded listener to add
-	 * @return registration for removal of listener
-	 */
-	public Registration addSucceededListener(ComponentEventListener<UHSucceededEvent> listener) {
-		return addListener(UHSucceededEvent.class, listener);
-	}
-
-	/**
-	 * Adds a listener for {@code uh-file-reject} events fired when a file cannot be
-	 * added due to some constrains: {@code setMaxFileSize, setAcceptedFileTypes}
-	 *
-	 * @param listener the listener
-	 * @return a {@link Registration} for removing the event listener
-	 */
-	public Registration addFileRejectedListener(ComponentEventListener<UHFileRejectedEvent> listener) {
-		return addListener(UHFileRejectedEvent.class, listener);
-	}
-
-	@DomEvent("uh-file-reject")
-	public static class UHFileRejectEvent extends ComponentEvent<UploadHelper> {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-		private final JsonObject detail;
-		private final JsonObject detailFile;
-		private final String detailError;
-
-		public UHFileRejectEvent(UploadHelper source, boolean fromClient, @EventData("event.detail") JsonObject detail,
-				@EventData("event.detail.file") JsonObject detailFile,
-				@EventData("event.detail.error") String detailError) {
-			super(source, fromClient);
-			this.detail = detail;
-			this.detailFile = detailFile;
-			this.detailError = detailError;
-		}
-
-		public JsonObject getDetail() {
-			return detail;
-		}
-
-		public JsonObject getDetailFile() {
-			return detailFile;
-		}
-
-		public String getDetailError() {
-			return detailError;
-		}
-	}
-
-	private Registration addFileRejectListener(ComponentEventListener<UHFileRejectEvent> listener) {
-		return addListener(UHFileRejectEvent.class, listener);
-	}
-
-	@DomEvent("uh-upload-error")
-	public static class UHUploadErrorEvent extends ComponentEvent<UploadHelper> {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-		private final JsonObject detail;
-		private final JsonObject detailXhr;
-		private final JsonObject detailFile;
-
-		public UHUploadErrorEvent(UploadHelper source, boolean fromClient, @EventData("event.detail") JsonObject detail,
-				@EventData("event.detail.xhr") JsonObject detailXhr,
-				@EventData("event.detail.file") JsonObject detailFile) {
-			super(source, fromClient);
-			this.detail = detail;
-			this.detailXhr = detailXhr;
-			this.detailFile = detailFile;
-		}
-
-		public JsonObject getDetail() {
-			return detail;
-		}
-
-		public JsonObject getDetailXhr() {
-			return detailXhr;
-		}
-
-		public JsonObject getDetailFile() {
-			return detailFile;
-		}
-	}
-
-	/**
-	 * Adds a listener for {@code uh-upload-error} events fired by the webcomponent.
-	 *
-	 * @param listener the listener
-	 * @return a {@link Registration} for removing the event listener
-	 */
-	private Registration addUploadErrorListener(ComponentEventListener<UHUploadErrorEvent> listener) {
-		return addListener(UHUploadErrorEvent.class, listener);
-	}
-
-	@DomEvent("uh-upload-start")
-	public static class UHUploadStartEvent extends ComponentEvent<UploadHelper> {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-		private final JsonObject detail;
-		private final JsonObject detailXhr;
-		private final JsonObject detailFile;
-
-		public UHUploadStartEvent(UploadHelper source, boolean fromClient, @EventData("event.detail") JsonObject detail,
-				@EventData("event.detail.xhr") JsonObject detailXhr,
-				@EventData("event.detail.file") JsonObject detailFile) {
-			super(source, fromClient);
-			this.detail = detail;
-			this.detailXhr = detailXhr;
-			this.detailFile = detailFile;
-		}
-
-		public JsonObject getDetail() {
-			return detail;
-		}
-
-		public JsonObject getDetailXhr() {
-			return detailXhr;
-		}
-
-		public JsonObject getDetailFile() {
-			return detailFile;
-		}
-	}
-
-	/**
-	 * Adds a listener for {@code uh-upload-start} events fired by the webcomponent.
-	 *
-	 * @param listener the listener
-	 * @return a {@link Registration} for removing the event listener
-	 */
-	private Registration addUploadStartListener(ComponentEventListener<UHUploadStartEvent> listener) {
-		return addListener(UHUploadStartEvent.class, listener);
-	}
-
-	@DomEvent("uh-upload-success")
-	public static class UHUploadSuccessEvent extends ComponentEvent<UploadHelper> {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-		private final JsonObject detail;
-		private final JsonObject detailXhr;
-		private final JsonObject detailFile;
-
-		public UHUploadSuccessEvent(UploadHelper source, boolean fromClient,
-				@EventData("event.detail") JsonObject detail, @EventData("event.detail.xhr") JsonObject detailXhr,
-				@EventData("event.detail.file") JsonObject detailFile) {
-			super(source, fromClient);
-			this.detail = detail;
-			this.detailXhr = detailXhr;
-			this.detailFile = detailFile;
-		}
-
-		public JsonObject getDetail() {
-			return detail;
-		}
-
-		public JsonObject getDetailXhr() {
-			return detailXhr;
-		}
-
-		public JsonObject getDetailFile() {
-			return detailFile;
-		}
-	}
-
-	/**
-	 * Adds a listener for {@code uh-upload-success} events fired by the
-	 * webcomponent.
-	 *
-	 * @param listener the listener
-	 * @return a {@link Registration} for removing the event listener
-	 */
-	private Registration addUploadSuccessListener(ComponentEventListener<UHUploadSuccessEvent> listener) {
-		return addListener(UHUploadSuccessEvent.class, listener);
-	}
-
-	private void fireStarted(String filename, String mimeType, long contentLength) {
-		fireEvent(new UHStartedEvent(this, filename, mimeType, contentLength));
-	}
-
-	private void fireNoInputStream(String filename, String mimeType, long length) {
-		fireEvent(new UHNoInputStreamEvent(this, filename, mimeType, length));
-	}
-
-	private void fireNoOutputStream(String filename, String mimeType, long length) {
-		fireEvent(new UHNoOutputStreamEvent(this, filename, mimeType, length));
-	}
-
-	private void fireUploadInterrupted(String filename, String mimeType, long length, Exception e) {
-		fireEvent(new UHFailedEvent(this, filename, mimeType, length, e));
-	}
-
-	private void fireUploadSuccess(String filename, String mimeType, long length) {
-		fireEvent(new UHSucceededEvent(this, filename, mimeType, length));
-	}
-
-	private void fireUploadFinish(String filename, String mimeType, long length) {
-		fireEvent(new UHFinishedEvent(this, filename, mimeType, length));
-	}
-
-	private void fireAllFinish() {
-		fireEvent(new UHAllFinishedEvent(this));
-	}
-
-	private void fireUpdateProgress(long totalBytes, long contentLength) {
-		fireEvent(new UHProgressUpdateEvent(this, totalBytes, contentLength));
-	}
-
-	private void startUpload() {
-		if (1 <= activeUploads) {
-			throw new IllegalStateException("Maximum supported amount of uploads already started");
-		}
-		activeUploads++;
-	}
-
-	private void endUpload() {
-		activeUploads--;
-		interrupted = false;
-	}
-
-	private StreamVariable getStreamVariable() {
-		if (streamVariable == null) {
-			streamVariable = new DefaultStreamVariable(this);
-		}
-		return streamVariable;
-	}
-
-	private static class DefaultStreamVariable implements StreamVariable {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		private Deque<StreamVariable.StreamingStartEvent> lastStartedEvent = new ArrayDeque<>();
-
-		private final UploadHelper uploadHelper;
-
-		public DefaultStreamVariable(UploadHelper uploadHelper) {
-			this.uploadHelper = uploadHelper;
-		}
-
-		@Override
-		public boolean listenProgress() {
-			return uploadHelper.getEventBus().hasListener(UHProgressUpdateEvent.class);
-		}
-
-		@Override
-		public void onProgress(StreamVariable.StreamingProgressEvent event) {
-			uploadHelper.fireUpdateProgress(event.getBytesReceived(), event.getContentLength());
-		}
-
-		@Override
-		public boolean isInterrupted() {
-			return uploadHelper.interrupted;
-		}
-
-		@Override
-		public OutputStream getOutputStream() {
-			if (uploadHelper.getReceiver() == null) {
-				throw new IllegalStateException("Upload cannot be performed without a receiver set. "
-						+ "Please firstly set the receiver implementation with uploadHelper.setReceiver");
-			}
-			StreamVariable.StreamingStartEvent event = lastStartedEvent.pop();
-			OutputStream receiveUpload = uploadHelper.getReceiver().receiveUpload(event.getFileName(),
-					event.getMimeType());
-			return receiveUpload;
-		}
-
-		@Override
-		public void streamingStarted(StreamVariable.StreamingStartEvent event) {
-			uploadHelper.startUpload();
-			try {
-				uploadHelper.fireStarted(event.getFileName(), event.getMimeType(), event.getContentLength());
-			} finally {
-				lastStartedEvent.addLast(event);
-			}
-		}
-
-		@Override
-		public void streamingFinished(StreamVariable.StreamingEndEvent event) {
-			try {
-				uploadHelper.fireUploadSuccess(event.getFileName(), event.getMimeType(), event.getContentLength());
-			} finally {
-				uploadHelper.endUpload();
-				uploadHelper.fireUploadFinish(event.getFileName(), event.getMimeType(), event.getContentLength());
-			}
-		}
-
-		@Override
-		public void streamingFailed(StreamVariable.StreamingErrorEvent event) {
-			try {
-				Exception exception = event.getException();
-				if (exception instanceof NoInputStreamException) {
-					uploadHelper.fireNoInputStream(event.getFileName(), event.getMimeType(), 0);
-				} else if (exception instanceof NoOutputStreamException) {
-					uploadHelper.fireNoOutputStream(event.getFileName(), event.getMimeType(), 0);
-				} else {
-					uploadHelper.fireUploadInterrupted(event.getFileName(), event.getMimeType(),
-							event.getBytesReceived(), exception);
-				}
-			} finally {
-				uploadHelper.endUpload();
-				uploadHelper.fireUploadFinish(event.getFileName(), event.getMimeType(), event.getContentLength());
-			}
-		}
-
-	}
-
+  private StreamVariable streamVariable;
+  private boolean interrupted = false;
+
+  private int activeUploads = 0;
+  private boolean uploading;
+
+  private UHReceiver receiver;
+
+  private int maxFileSize = Integer.MAX_VALUE;
+
+  private String dropZoneString;
+
+  private UploadHelper() {
+    this.addUploadErrorListener(event -> {});
+
+    this.addUploadSuccessListener(event -> {});
+
+    this.addFileRejectListener(
+        event -> this.fireEvent(new UHFileRejectedEvent(this, event.getDetailError())));
+
+    this.getElement()
+        .setAttribute(
+            "target",
+            new StreamReceiver(
+                this.getElement().getNode(), "upload-helper", this.getStreamVariable()));
+
+    final String elementFiles = "element.files";
+    DomEventListener allFinishedListener =
+        e -> {
+          JsonArray files = e.getEventData().getArray(elementFiles);
+
+          boolean isUploading =
+              IntStream.range(0, files.length())
+                  .anyMatch(
+                      index -> {
+                        final String KEY = "uploading";
+                        JsonObject object = files.getObject(index);
+                        return object.hasKey(KEY) && object.getBoolean(KEY);
+                      });
+
+          if (this.uploading && !isUploading) {
+            this.fireAllFinish();
+          }
+          this.uploading = isUploading;
+        };
+
+    this.addUploadStartListener(e -> this.uploading = true);
+
+    this.getElement()
+        .addEventListener("uh-upload-success", allFinishedListener)
+        .addEventData(elementFiles);
+    this.getElement()
+        .addEventListener("uh-upload-error", allFinishedListener)
+        .addEventData(elementFiles);
+  }
+
+  public UploadHelper(Component dropZone) {
+    this();
+    String uuid = UUID.randomUUID().toString();
+    dropZone.setId(uuid);
+    this.getElement().setProperty("dropZone", uuid);
+  }
+
+  public UploadHelper(Component dropZone, UHReceiver receiver) {
+    this();
+    String uuid = UUID.randomUUID().toString();
+    dropZone.setId(uuid);
+    this.getElement().setProperty("dropZone", uuid);
+    this.setReceiver(receiver);
+  }
+
+  public UploadHelper(Component dropZone, String shadowDomDropZone, UHReceiver receiver) {
+    this();
+    String uuid = UUID.randomUUID().toString();
+    dropZone.setId(uuid);
+    this.getElement().setProperty("dropZone", uuid + "|" + shadowDomDropZone);
+    this.setReceiver(receiver);
+  }
+
+  public UploadHelper(String dropZone) {
+    this();
+    this.getElement().setProperty("dropZone", dropZone);
+  }
+
+  public UploadHelper(String dropZone, UHReceiver receiver) {
+    this();
+    this.getElement().setProperty("dropZone", dropZone);
+    this.setReceiver(receiver);
+  }
+
+  /**
+   * Sets a receiver.
+   *
+   * @param receiver {@link UHReceiver}
+   */
+  public void setReceiver(UHReceiver receiver) {
+    this.receiver = receiver;
+  }
+
+  /**
+   * Return the current receiver.
+   *
+   * @return the StreamVariable.
+   */
+  public UHReceiver getReceiver() {
+    return this.receiver;
+  }
+
+  /**
+   * Specify the maximum file size in bytes allowed to upload. Notice that it is a client-side
+   * constraint, which will be checked before sending the request.
+   *
+   * @param maxFileSize the maximum file size in bytes
+   */
+  public void setMaxFileSize(int maxFileSize) {
+    this.getElement().setProperty("maxFileSize", maxFileSize);
+    this.maxFileSize = maxFileSize;
+  }
+
+  /**
+   * Get the maximum allowed file size in the client-side, in bytes.
+   *
+   * @return the maximum file size in bytes
+   */
+  public int getMaxFileSize() {
+    return this.maxFileSize;
+  }
+
+  /**
+   * Add listener that is informed on the finished upload.
+   *
+   * @param listener all finished listener to add
+   * @return a {@link Registration} for removing the event listener
+   */
+  public Registration addAllFinishedListener(ComponentEventListener<UHAllFinishedEvent> listener) {
+    return this.addListener(UHAllFinishedEvent.class, listener);
+  }
+
+  /**
+   * Add a progress listener that is informed on upload progress.
+   *
+   * @param listener progress listener to add
+   * @return registration for removal of listener
+   */
+  public Registration addProgressListener(ComponentEventListener<UHProgressUpdateEvent> listener) {
+    return this.addListener(UHProgressUpdateEvent.class, listener);
+  }
+
+  /**
+   * Add a succeeded listener that is informed on upload failure.
+   *
+   * @param listener failed listener to add
+   * @return registration for removal of listener
+   */
+  public Registration addFailedListener(ComponentEventListener<UHFailedEvent> listener) {
+    return this.addListener(UHFailedEvent.class, listener);
+  }
+
+  /**
+   * Add a succeeded listener that is informed on upload finished.
+   *
+   * @param listener finished listener to add
+   * @return registration for removal of listener
+   */
+  public Registration addFinishedListener(ComponentEventListener<UHFinishedEvent> listener) {
+    return this.addListener(UHFinishedEvent.class, listener);
+  }
+
+  /**
+   * Add a succeeded listener that is informed on upload start.
+   *
+   * @param listener start listener to add
+   * @return registration for removal of listener
+   */
+  public Registration addStartedListener(ComponentEventListener<UHStartedEvent> listener) {
+    return this.addListener(UHStartedEvent.class, listener);
+  }
+
+  /**
+   * Add a succeeded listener that is informed on upload succeeded.
+   *
+   * @param listener succeeded listener to add
+   * @return registration for removal of listener
+   */
+  public Registration addSucceededListener(ComponentEventListener<UHSucceededEvent> listener) {
+    return this.addListener(UHSucceededEvent.class, listener);
+  }
+
+  /**
+   * Adds a listener for {@code uh-file-reject} events fired when a file cannot be added due to some
+   * constrains: {@code setMaxFileSize, setAcceptedFileTypes}
+   *
+   * @param listener the listener
+   * @return a {@link Registration} for removing the event listener
+   */
+  public Registration addFileRejectedListener(
+      ComponentEventListener<UHFileRejectedEvent> listener) {
+    return this.addListener(UHFileRejectedEvent.class, listener);
+  }
+
+  @DomEvent("uh-file-reject")
+  public static class UHFileRejectEvent extends ComponentEvent<UploadHelper> {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private final JsonObject detail;
+    private final JsonObject detailFile;
+    private final String detailError;
+
+    public UHFileRejectEvent(
+        UploadHelper source,
+        boolean fromClient,
+        @EventData("event.detail") JsonObject detail,
+        @EventData("event.detail.file") JsonObject detailFile,
+        @EventData("event.detail.error") String detailError) {
+      super(source, fromClient);
+      this.detail = detail;
+      this.detailFile = detailFile;
+      this.detailError = detailError;
+    }
+
+    public JsonObject getDetail() {
+      return this.detail;
+    }
+
+    public JsonObject getDetailFile() {
+      return this.detailFile;
+    }
+
+    public String getDetailError() {
+      return this.detailError;
+    }
+  }
+
+  private Registration addFileRejectListener(ComponentEventListener<UHFileRejectEvent> listener) {
+    return this.addListener(UHFileRejectEvent.class, listener);
+  }
+
+  @DomEvent("uh-upload-error")
+  public static class UHUploadErrorEvent extends ComponentEvent<UploadHelper> {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private final JsonObject detail;
+    private final JsonObject detailXhr;
+    private final JsonObject detailFile;
+
+    public UHUploadErrorEvent(
+        UploadHelper source,
+        boolean fromClient,
+        @EventData("event.detail") JsonObject detail,
+        @EventData("event.detail.xhr") JsonObject detailXhr,
+        @EventData("event.detail.file") JsonObject detailFile) {
+      super(source, fromClient);
+      this.detail = detail;
+      this.detailXhr = detailXhr;
+      this.detailFile = detailFile;
+    }
+
+    public JsonObject getDetail() {
+      return this.detail;
+    }
+
+    public JsonObject getDetailXhr() {
+      return this.detailXhr;
+    }
+
+    public JsonObject getDetailFile() {
+      return this.detailFile;
+    }
+  }
+
+  /**
+   * Adds a listener for {@code uh-upload-error} events fired by the webcomponent.
+   *
+   * @param listener the listener
+   * @return a {@link Registration} for removing the event listener
+   */
+  private Registration addUploadErrorListener(ComponentEventListener<UHUploadErrorEvent> listener) {
+    return this.addListener(UHUploadErrorEvent.class, listener);
+  }
+
+  @DomEvent("uh-upload-start")
+  public static class UHUploadStartEvent extends ComponentEvent<UploadHelper> {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private final JsonObject detail;
+    private final JsonObject detailXhr;
+    private final JsonObject detailFile;
+
+    public UHUploadStartEvent(
+        UploadHelper source,
+        boolean fromClient,
+        @EventData("event.detail") JsonObject detail,
+        @EventData("event.detail.xhr") JsonObject detailXhr,
+        @EventData("event.detail.file") JsonObject detailFile) {
+      super(source, fromClient);
+      this.detail = detail;
+      this.detailXhr = detailXhr;
+      this.detailFile = detailFile;
+    }
+
+    public JsonObject getDetail() {
+      return this.detail;
+    }
+
+    public JsonObject getDetailXhr() {
+      return this.detailXhr;
+    }
+
+    public JsonObject getDetailFile() {
+      return this.detailFile;
+    }
+  }
+
+  /**
+   * Adds a listener for {@code uh-upload-start} events fired by the webcomponent.
+   *
+   * @param listener the listener
+   * @return a {@link Registration} for removing the event listener
+   */
+  private Registration addUploadStartListener(ComponentEventListener<UHUploadStartEvent> listener) {
+    return this.addListener(UHUploadStartEvent.class, listener);
+  }
+
+  @DomEvent("uh-upload-success")
+  public static class UHUploadSuccessEvent extends ComponentEvent<UploadHelper> {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private final JsonObject detail;
+    private final JsonObject detailXhr;
+    private final JsonObject detailFile;
+
+    public UHUploadSuccessEvent(
+        UploadHelper source,
+        boolean fromClient,
+        @EventData("event.detail") JsonObject detail,
+        @EventData("event.detail.xhr") JsonObject detailXhr,
+        @EventData("event.detail.file") JsonObject detailFile) {
+      super(source, fromClient);
+      this.detail = detail;
+      this.detailXhr = detailXhr;
+      this.detailFile = detailFile;
+    }
+
+    public JsonObject getDetail() {
+      return this.detail;
+    }
+
+    public JsonObject getDetailXhr() {
+      return this.detailXhr;
+    }
+
+    public JsonObject getDetailFile() {
+      return this.detailFile;
+    }
+  }
+
+  /**
+   * Adds a listener for {@code uh-upload-success} events fired by the webcomponent.
+   *
+   * @param listener the listener
+   * @return a {@link Registration} for removing the event listener
+   */
+  private Registration addUploadSuccessListener(
+      ComponentEventListener<UHUploadSuccessEvent> listener) {
+    return this.addListener(UHUploadSuccessEvent.class, listener);
+  }
+
+  private void fireStarted(String filename, String mimeType, long contentLength) {
+    this.fireEvent(new UHStartedEvent(this, filename, mimeType, contentLength));
+  }
+
+  private void fireNoInputStream(String filename, String mimeType, long length) {
+    this.fireEvent(new UHNoInputStreamEvent(this, filename, mimeType, length));
+  }
+
+  private void fireNoOutputStream(String filename, String mimeType, long length) {
+    this.fireEvent(new UHNoOutputStreamEvent(this, filename, mimeType, length));
+  }
+
+  private void fireUploadInterrupted(String filename, String mimeType, long length, Exception e) {
+    this.fireEvent(new UHFailedEvent(this, filename, mimeType, length, e));
+  }
+
+  private void fireUploadSuccess(String filename, String mimeType, long length) {
+    this.fireEvent(new UHSucceededEvent(this, filename, mimeType, length));
+  }
+
+  private void fireUploadFinish(String filename, String mimeType, long length) {
+    this.fireEvent(new UHFinishedEvent(this, filename, mimeType, length));
+  }
+
+  private void fireAllFinish() {
+    this.fireEvent(new UHAllFinishedEvent(this));
+  }
+
+  private void fireUpdateProgress(long totalBytes, long contentLength) {
+    this.fireEvent(new UHProgressUpdateEvent(this, totalBytes, contentLength));
+  }
+
+  private void startUpload() {
+    if (1 <= this.activeUploads) {
+      throw new IllegalStateException("Maximum supported amount of uploads already started");
+    }
+    this.activeUploads++;
+  }
+
+  private void endUpload() {
+    this.activeUploads--;
+    this.interrupted = false;
+  }
+
+  private StreamVariable getStreamVariable() {
+    if (this.streamVariable == null) {
+      this.streamVariable = new DefaultStreamVariable(this);
+    }
+    return this.streamVariable;
+  }
+
+  private static class DefaultStreamVariable implements StreamVariable {
+
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    private Deque<StreamVariable.StreamingStartEvent> lastStartedEvent = new ArrayDeque<>();
+
+    private final UploadHelper uploadHelper;
+
+    public DefaultStreamVariable(UploadHelper uploadHelper) {
+      this.uploadHelper = uploadHelper;
+    }
+
+    @Override
+    public boolean listenProgress() {
+      return this.uploadHelper.getEventBus().hasListener(UHProgressUpdateEvent.class);
+    }
+
+    @Override
+    public void onProgress(StreamVariable.StreamingProgressEvent event) {
+      this.uploadHelper.fireUpdateProgress(event.getBytesReceived(), event.getContentLength());
+    }
+
+    @Override
+    public boolean isInterrupted() {
+      return this.uploadHelper.interrupted;
+    }
+
+    @Override
+    public OutputStream getOutputStream() {
+      if (this.uploadHelper.getReceiver() == null) {
+        throw new IllegalStateException(
+            "Upload cannot be performed without a receiver set. "
+                + "Please firstly set the receiver implementation with uploadHelper.setReceiver");
+      }
+      StreamVariable.StreamingStartEvent event = this.lastStartedEvent.pop();
+      OutputStream receiveUpload =
+          this.uploadHelper.getReceiver().receiveUpload(event.getFileName(), event.getMimeType());
+      return receiveUpload;
+    }
+
+    @Override
+    public void streamingStarted(StreamVariable.StreamingStartEvent event) {
+      this.uploadHelper.startUpload();
+      try {
+        this.uploadHelper.fireStarted(
+            event.getFileName(), event.getMimeType(), event.getContentLength());
+      } finally {
+        this.lastStartedEvent.addLast(event);
+      }
+    }
+
+    @Override
+    public void streamingFinished(StreamVariable.StreamingEndEvent event) {
+      try {
+        this.uploadHelper.fireUploadSuccess(
+            event.getFileName(), event.getMimeType(), event.getContentLength());
+      } finally {
+        this.uploadHelper.endUpload();
+        this.uploadHelper.fireUploadFinish(
+            event.getFileName(), event.getMimeType(), event.getContentLength());
+      }
+    }
+
+    @Override
+    public void streamingFailed(StreamVariable.StreamingErrorEvent event) {
+      try {
+        Exception exception = event.getException();
+        if (exception instanceof NoInputStreamException) {
+          this.uploadHelper.fireNoInputStream(event.getFileName(), event.getMimeType(), 0);
+        } else if (exception instanceof NoOutputStreamException) {
+          this.uploadHelper.fireNoOutputStream(event.getFileName(), event.getMimeType(), 0);
+        } else {
+          this.uploadHelper.fireUploadInterrupted(
+              event.getFileName(), event.getMimeType(), event.getBytesReceived(), exception);
+        }
+      } finally {
+        this.uploadHelper.endUpload();
+        this.uploadHelper.fireUploadFinish(
+            event.getFileName(), event.getMimeType(), event.getContentLength());
+      }
+    }
+  }
 }
