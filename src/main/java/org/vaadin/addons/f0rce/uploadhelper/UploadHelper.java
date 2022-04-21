@@ -99,18 +99,17 @@ public class UploadHelper extends Component implements HasSize {
         .addEventData(elementFiles);
   }
 
-  public UploadHelper(Component dropZone) {
+  public UploadHelper(UHReceiver receiver) {
     this();
-    String uuid = UUID.randomUUID().toString();
-    dropZone.setId(uuid);
-    this.getElement().setProperty("dropZone", uuid);
+    this.setReceiver(receiver);
   }
 
   public UploadHelper(Component dropZone, UHReceiver receiver) {
     this();
     String uuid = UUID.randomUUID().toString();
     dropZone.setId(uuid);
-    this.getElement().setProperty("dropZone", uuid);
+    this.dropZoneString = uuid;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
     this.setReceiver(receiver);
   }
 
@@ -118,18 +117,22 @@ public class UploadHelper extends Component implements HasSize {
     this();
     String uuid = UUID.randomUUID().toString();
     dropZone.setId(uuid);
-    this.getElement().setProperty("dropZone", uuid + "|" + shadowDomDropZone);
+    this.dropZoneString = uuid + "|" + shadowDomDropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
     this.setReceiver(receiver);
-  }
-
-  public UploadHelper(String dropZone) {
-    this();
-    this.getElement().setProperty("dropZone", dropZone);
   }
 
   public UploadHelper(String dropZone, UHReceiver receiver) {
     this();
-    this.getElement().setProperty("dropZone", dropZone);
+    this.dropZoneString = dropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
+    this.setReceiver(receiver);
+  }
+
+  public UploadHelper(String dropZone, String shadowDomDropZone, UHReceiver receiver) {
+    this();
+    this.dropZoneString = dropZone + "|" + shadowDomDropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
     this.setReceiver(receiver);
   }
 
