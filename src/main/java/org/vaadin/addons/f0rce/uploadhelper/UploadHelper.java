@@ -16,6 +16,7 @@ import org.vaadin.addons.f0rce.uploadhelper.events.UHProgressUpdateEvent;
 import org.vaadin.addons.f0rce.uploadhelper.events.UHStartedEvent;
 import org.vaadin.addons.f0rce.uploadhelper.events.UHSucceededEvent;
 
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -51,7 +52,7 @@ public class UploadHelper extends Component implements HasSize {
   private int maxFileSize = Integer.MAX_VALUE;
   private int maxFiles = 1;
 
-  private String dropZoneString;
+  private String dropZoneString = "";
 
   private UploadHelper() {
     this.addUploadErrorListener(event -> {});
@@ -129,6 +130,11 @@ public class UploadHelper extends Component implements HasSize {
     this();
     this.getElement().setProperty("dropZone", dropZone);
     this.setReceiver(receiver);
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    this.getElement().setProperty("dropZone", this.dropZoneString);
   }
 
   /**

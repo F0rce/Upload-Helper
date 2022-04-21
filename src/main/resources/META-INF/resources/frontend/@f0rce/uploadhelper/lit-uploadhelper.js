@@ -28,6 +28,7 @@ class LitUploadHelper extends LitElement {
 
   constructor() {
     super();
+    this.dropZone = "";
     this.nodrop = function () {
       try {
         return !!document.createEvent("TouchEvent");
@@ -54,6 +55,10 @@ class LitUploadHelper extends LitElement {
   async firstUpdated(changedProperties) {
     this._size = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
+    this._dragoverListener = this._onDragover.bind(this);
+    this._dragleaveListener = this._onDragleave.bind(this);
+    this._dropListener = this._onDrop.bind(this);
+
     this.initializeUploadHelper();
   }
 
@@ -68,28 +73,63 @@ class LitUploadHelper extends LitElement {
   }
 
   initializeUploadHelper() {
-    if (this.dropZone.indexOf("|") > -1) {
-      let elem = document.getElementById(this.dropZone.split("|")[0]);
-      this.dropZoneElement = elem.shadowRoot.getElementById(
-        this.dropZone.split("|")[1]
+    if (this.dropZone !== "") {
+      if (this.dropZone.indexOf("|") > -1) {
+        let elem = document.getElementById(this.dropZone.split("|")[0]);
+        this.dropZoneElement = elem.shadowRoot.getElementById(
+          this.dropZone.split("|")[1]
+        );
+      } else {
+        this.dropZoneElement = document.getElementById(this.dropZone);
+      }
+
+      if (this.dropZoneElement == null) {
+        return console.error("[Upload-Helper] dropZone ID not found.");
+      }
+
+      this.dropZoneElement.addEventListener("dragover", this._dragoverListener);
+      this.dropZoneElement.addEventListener(
+        "dragleave",
+        this._dragleaveListener
       );
-    } else {
-      this.dropZoneElement = document.getElementById(this.dropZone);
+      this.dropZoneElement.addEventListener("drop", this._dropListener);
+    }
+  }
+
+  dropZoneChanged() {
+    if (this.dropZoneElement !== undefined) {
+      this.dropZoneElement.removeEventListener(
+        "dragover",
+        this._dragoverListener
+      );
+      this.dropZoneElement.removeEventListener(
+        "dragleave",
+        this._dragleaveListener
+      );
+      this.dropZoneElement.removeEventListener("drop", this._dropListener);
     }
 
-    if (this.dropZoneElement == null) {
-      return console.error("[Upload-Helper] dropZone ID not found.");
-    }
+    if (this.dropZone !== "") {
+      if (this.dropZone.indexOf("|") > -1) {
+        let elem = document.getElementById(this.dropZone.split("|")[0]);
+        this.dropZoneElement = elem.shadowRoot.getElementById(
+          this.dropZone.split("|")[1]
+        );
+      } else {
+        this.dropZoneElement = document.getElementById(this.dropZone);
+      }
 
-    this.dropZoneElement.addEventListener(
-      "dragover",
-      this._onDragover.bind(this)
-    );
-    this.dropZoneElement.addEventListener(
-      "dragleave",
-      this._onDragleave.bind(this)
-    );
-    this.dropZoneElement.addEventListener("drop", this._onDrop.bind(this));
+      if (this.dropZoneElement == null) {
+        return console.error("[Upload-Helper] dropZone ID not found.");
+      }
+
+      this.dropZoneElement.addEventListener("dragover", this._dragoverListener);
+      this.dropZoneElement.addEventListener(
+        "dragleave",
+        this._dragleaveListener
+      );
+      this.dropZoneElement.addEventListener("drop", this._dropListener);
+    }
   }
 
   _onDragover(event) {
