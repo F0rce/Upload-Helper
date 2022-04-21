@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"org.vaadin.addons.f0rce.uploadhelper.events"},{"l":"org.vaadin.addons.f0rce.uploadhelper.receiver"}]
