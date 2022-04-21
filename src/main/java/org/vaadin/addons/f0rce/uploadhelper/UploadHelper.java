@@ -149,6 +149,56 @@ public class UploadHelper extends Component implements HasSize {
     }
   }
 
+  /**
+   * Sets the dropZone (the {@link Component} which Upload-Helper should be enabled on).
+   *
+   * @param dropZone {@link Component}
+   */
+  public void setDropZone(Component dropZone) {
+    String uuid = UUID.randomUUID().toString();
+    dropZone.setId(uuid);
+    this.dropZoneString = uuid;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
+  }
+
+  /**
+   * Sets the dropZone in the {@link Component}'s ShadowDom.
+   *
+   * @param dropZone {@link Component}
+   * @param shadowDomDropZone {@link String}
+   */
+  public void setDropZone(Component dropZone, String shadowDomDropZone) {
+    String uuid = UUID.randomUUID().toString();
+    dropZone.setId(uuid);
+    this.dropZoneString = uuid + "|" + shadowDomDropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
+  }
+
+  /**
+   * Sets the dropZone (the Element ID which Upload-Helper should be enabled on).
+   *
+   * @param dropZone {@link String}
+   */
+  public void setDropZone(String dropZone) {
+    this.dropZoneString = dropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
+  }
+
+  /**
+   * Sets the dropZone in the ShadowDom of given Element ID.
+   *
+   * @param dropZone {@link String}
+   * @param shadowDomDropZone {@link String}
+   */
+  public void setDropZone(String dropZone, String shadowDomDropZone) {
+    this.dropZoneString = dropZone + "|" + shadowDomDropZone;
+    this.getElement().setProperty("dropZone", this.dropZoneString);
+  }
+
+  /** Removes the dropZone / disables uploading to it. */
+  public void removeDropZone() {
+    this.dropZoneString = "";
+    this.getElement().setProperty("dropZone", this.dropZoneString);
   }
 
   /**
