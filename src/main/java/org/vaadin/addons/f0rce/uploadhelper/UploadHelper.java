@@ -49,6 +49,7 @@ public class UploadHelper extends Component implements HasSize {
   private UHReceiver receiver;
 
   private int maxFileSize = Integer.MAX_VALUE;
+  private int maxFiles = 1;
 
   private String dropZoneString;
 
@@ -137,6 +138,11 @@ public class UploadHelper extends Component implements HasSize {
    */
   public void setReceiver(UHReceiver receiver) {
     this.receiver = receiver;
+    if (!(receiver instanceof UHMultiFileReceiver)) {
+      this.setMaxFiles(1);
+    }
+  }
+
   }
 
   /**
@@ -166,6 +172,22 @@ public class UploadHelper extends Component implements HasSize {
    */
   public int getMaxFileSize() {
     return this.maxFileSize;
+  }
+
+  /**
+   * Limit of files to upload, by default it is 1. If the value is set to one, native file browser
+   * will prevent selecting multiple files.
+   *
+   * @param maxFiles int
+   */
+  public void setMaxFiles(int maxFiles) {
+    this.getElement().setProperty("maxFiles", maxFiles);
+    this.maxFiles = maxFiles;
+  }
+
+  /** @return maxFiles int */
+  public int getMaxFiles() {
+    return this.maxFiles;
   }
 
   /**
@@ -444,7 +466,7 @@ public class UploadHelper extends Component implements HasSize {
   }
 
   private void startUpload() {
-    if (1 <= this.activeUploads) {
+    if (this.maxFiles != 0 && this.maxFiles <= this.activeUploads) {
       throw new IllegalStateException("Maximum supported amount of uploads already started");
     }
     this.activeUploads++;

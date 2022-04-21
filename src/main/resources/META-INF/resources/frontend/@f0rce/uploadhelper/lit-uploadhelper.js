@@ -17,6 +17,7 @@ class LitUploadHelper extends LitElement {
       method: { type: String },
       timeout: { type: Number },
       _dragover: { type: Boolean },
+      maxFiles: { type: Number },
       files: { type: Array },
       accept: { type: String },
       maxFileSize: { type: Number },
@@ -38,6 +39,7 @@ class LitUploadHelper extends LitElement {
     this.method = "POST";
     this.timeout = 0;
     this._dragover = false;
+    this.maxFiles = 1;
     this.files = [];
     this.accept = "";
     this.maxFileSize = Infinity;
@@ -96,7 +98,7 @@ class LitUploadHelper extends LitElement {
     if (!this.nodrop() && !this._dragover) {
       this._dragover = true;
     }
-    if (event.dataTransfer.items.length > 1) {
+    if (event.dataTransfer.items.length > this.maxFiles) {
       event.dataTransfer.dropEffect = "none";
     } else {
       event.dataTransfer.dropEffect = this.nodrop() ? "none" : "copy";
