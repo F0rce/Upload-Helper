@@ -23,6 +23,7 @@ class LitUploadHelper extends LitElement {
       maxFileSize: { type: Number },
       _dragoverValid: { type: Boolean },
       fromDataName: { type: String },
+      visualFeedback: { type: Boolean },
     };
   }
 
@@ -46,6 +47,7 @@ class LitUploadHelper extends LitElement {
     this.maxFileSize = Infinity;
     this._dragoverValid = false;
     this.fromDataName = "file";
+    this.visualFeedback = true;
   }
 
   static get styles() {
@@ -134,7 +136,9 @@ class LitUploadHelper extends LitElement {
 
   _onDragover(event) {
     event.preventDefault();
-    this.dropZoneElement.classList.add("uh-on-hover");
+    if (this.visualFeedback) {
+      this.dropZoneElement.classList.add("uh-on-hover");
+    }
     if (!this.nodrop() && !this._dragover) {
       this._dragover = true;
     }
@@ -147,14 +151,18 @@ class LitUploadHelper extends LitElement {
 
   _onDragleave(event) {
     event.preventDefault();
-    this.dropZoneElement.classList.remove("uh-on-hover");
+    if (this.visualFeedback) {
+      this.dropZoneElement.classList.remove("uh-on-hover");
+    }
     if (this._dragover && !this.nodrop) {
       this._dragover = this._dragoverValid = false;
     }
   }
 
   _onDrop(event) {
-    this.dropZoneElement.classList.remove("uh-on-hover");
+    if (this.visualFeedback) {
+      this.dropZoneElement.classList.remove("uh-on-hover");
+    }
     if (!this.nodrop()) {
       event.preventDefault();
       this._dragover = this._dragoverValid = false;

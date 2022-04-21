@@ -53,6 +53,7 @@ public class UploadHelper extends Component implements HasSize {
   private int maxFiles = 1;
 
   private String dropZoneString = "";
+  private boolean visualFeedback = true;
 
   private UploadHelper() {
     this.addUploadErrorListener(event -> {});
@@ -316,6 +317,26 @@ public class UploadHelper extends Component implements HasSize {
   public Registration addFileRejectedListener(
       ComponentEventListener<UHFileRejectedEvent> listener) {
     return this.addListener(UHFileRejectedEvent.class, listener);
+  }
+
+  /**
+   * If set the false, the background color and the opacity of the dropZone Element is not changed.
+   * Else CSS Classes are added to have some kind of visual feedback.
+   *
+   * @param visualFeedback boolean
+   */
+  public void setVisualFeedback(boolean visualFeedback) {
+    this.getElement().setProperty("visualFeedback", visualFeedback);
+    this.visualFeedback = visualFeedback;
+  }
+
+  /**
+   * Returns if visual feedback is enabled.
+   *
+   * @return boolean
+   */
+  public boolean isVisualFeedback() {
+    return this.visualFeedback;
   }
 
   @DomEvent("uh-file-reject")
