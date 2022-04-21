@@ -1,38 +1,78 @@
 package org.vaadin.addons.f0rce.uploadhelper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
+import java.io.InputStream;
 
+import org.vaadin.addons.f0rce.uploadhelper.receiver.UHMultiFileMemoryBuffer;
+
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.Route;
 
 @Route("")
 public class View extends Div {
 
-	public View() {
-		ByteArrayOutputStream buffer = new ByteArrayOutputStream(65536);
+  public View() {
+    UHMultiFileMemoryBuffer memoryBuffer = new UHMultiFileMemoryBuffer();
 
-		class FileReceiver implements UHReceiver {
+    Upload u = new Upload();
 
-			@Override
-			public OutputStream receiveUpload(String fileName, String mimeType) {
-				buffer.reset();
-				return buffer;
-			}
+    TextField tf = new TextField("TestValue");
+    tf.setWidth("300px");
 
-		}
+    TextField tf2 = new TextField("TestValue2");
+    tf2.setWidth("300px");
 
-		TextField tf = new TextField("TestValue");
-		tf.setWidth("300px");
+    Dialog dialog = new Dialog();
+    dialog.setSizeFull();
 
-		UploadHelper uploadHelper = new UploadHelper(tf, new FileReceiver());
+    UploadHelper uploadHelper = new UploadHelper(memoryBuffer);
+    uploadHelper.setMaxFiles(5);
+    uploadHelper.setVisualFeedback(true);
 
-		uploadHelper.addSucceededListener(inEvent -> {
-			System.out.println(inEvent.getFileName() + " " + inEvent.getMIMEType() + " " + inEvent.getContentLength());
-			tf.setValue(buffer.toString());
-		});
+    Button dztf = new Button("dropZone tf");
+    dztf.addClickListener(
+        evt -> {
+          uploadHelper.setDropZone(tf);
+        });
 
-		add(uploadHelper, tf);
-	}
+    Button dztf2 = new Button("dropZone tf2");
+    dztf2.addClickListener(
+        evt -> {
+          uploadHelper.setDropZone(tf2);
+        });
+
+    dialog.add(tf, dztf, tf2, dztf2);
+    dialog.add(uploadHelper);
+
+    Button open = new Button("Open");
+    open.addClickListener(
+        evt -> {
+          dialog.open();
+        });
+
+    uploadHelper.addProgressListener(
+        evt -> {
+          long total = evt.getContentLength();
+          long progress = evt.getReadBytes();
+
+          long percent = progress * 100 / total;
+          System.out.println(percent);
+        });
+
+    uploadHelper.addSucceededListener(
+        inEvent -> {
+          String fileName = inEvent.getFileName();
+
+          InputStream fileData = memoryBuffer.getInputStream(fileName);
+          long contentLength = inEvent.getContentLength();
+          String mimeTyle = inEvent.getMIMEType();
+
+          System.out.println(fileName + " - " + mimeTyle);
+        });
+
+    this.add(open, dialog);
+  }
 }
